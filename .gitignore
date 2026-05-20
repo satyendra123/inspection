@@ -10,12 +10,15 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+uploads
 *.local
 .env
 .codex-work/
 test-results/
 coverage/
 *.zip
+release.tar.gz
+debug-thunder-curl.txt
 
 # Editor directories and files
 .vscode/*
