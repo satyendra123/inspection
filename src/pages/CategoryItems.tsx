@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 type Status = "Active" | "Inactive";
 
@@ -233,7 +234,6 @@ function buildInitialItems(): ItemRecord[] {
   const startIndex = sampleItems.length + 1;
 
   let activeCount = sampleItems.filter((item) => item.status === "Active").length;
-  let inactiveCount = sampleItems.length - activeCount;
 
   for (let id = startIndex; id <= 1248; id += 1) {
     const templateIndex = (id - 1) % 8;
@@ -243,8 +243,6 @@ function buildInitialItems(): ItemRecord[] {
 
     if (isActive) {
       activeCount += 1;
-    } else {
-      inactiveCount += 1;
     }
 
     generatedItems.push({
@@ -525,8 +523,11 @@ const initialItems = buildInitialItems();
 
 function CategoryItems() {
   const location = useLocation();
+  const { permissions } = useAuth();
   const categorySectionRef = useRef<HTMLElement>(null);
   const itemSectionRef = useRef<HTMLElement>(null);
+  const canViewCategory = permissions.includes("view_category");
+  const canViewItems = permissions.includes("view_items");
 
   const [categories, setCategories] = useState<CategoryRecord[]>(initialCategories);
   const [items, setItems] = useState<ItemRecord[]>(initialItems);
@@ -766,191 +767,195 @@ function CategoryItems() {
         ))}
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
-        <SectionHeader
-          title="Categories"
-          subtitle="Manage all asset categories"
-          searchValue={categorySearch}
-          searchPlaceholder="Search category..."
-          onSearchChange={setCategorySearch}
-          actionLabel="Add Category"
-          onAction={openAddCategory}
-        />
+      {canViewCategory && (
+        <section className="rounded-3xl border border-slate-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+          <SectionHeader
+            title="Categories"
+            subtitle="Manage all asset categories"
+            searchValue={categorySearch}
+            searchPlaceholder="Search category..."
+            onSearchChange={setCategorySearch}
+            actionLabel="Add Category"
+            onAction={openAddCategory}
+          />
 
-        <div className="px-5 pb-5 pt-4">
-          <div className="overflow-x-auto rounded-2xl border border-slate-100">
-            <table className="w-full min-w-[760px] border-collapse text-left">
-              <thead>
-                <tr className="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Category Name</th>
-                  <th className="px-4 py-3">Description</th>
-                  <th className="px-4 py-3">Total Items</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categoryPageItems.map((category, index) => {
-                  const rowIndex = categoryStart + index;
-                  return (
-                    <tr key={category.id} className="border-t border-slate-100 text-sm text-slate-700">
-                      <td className="px-4 py-4 text-slate-500">{rowIndex}</td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-3">
-                          <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-bold ring-1 ring-inset ${CATEGORY_BADGES[(category.id - 1) % CATEGORY_BADGES.length]}`}>
-                            {category.category_name
-                              .split(" ")
-                              .map((part) => part[0])
-                              .slice(0, 2)
-                              .join("")}
-                          </span>
-                          <span className="font-semibold text-slate-900">{category.category_name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-slate-500">{category.description}</td>
-                      <td className="px-4 py-4 font-medium text-slate-700">{category.total_items}</td>
-                      <td className="px-4 py-4">
-                        <StatusBadge status={category.status} />
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setViewState({ type: "category", record: category })}
-                            className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                            aria-label="View category"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEditCategory(category)}
-                            className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                            aria-label="Edit category"
-                          >
-                            <PencilLine className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeCategory(category.id)}
-                            className="grid h-8 w-8 place-items-center rounded-full text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
-                            aria-label="Delete category"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="px-5 pb-5 pt-4">
+            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+              <table className="w-full min-w-[760px] border-collapse text-left">
+                <thead>
+                  <tr className="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-3">#</th>
+                    <th className="px-4 py-3">Category Name</th>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3">Total Items</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryPageItems.map((category, index) => {
+                    const rowIndex = categoryStart + index;
+                    return (
+                      <tr key={category.id} className="border-t border-slate-100 text-sm text-slate-700">
+                        <td className="px-4 py-4 text-slate-500">{rowIndex}</td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-bold ring-1 ring-inset ${CATEGORY_BADGES[(category.id - 1) % CATEGORY_BADGES.length]}`}>
+                              {category.category_name
+                                .split(" ")
+                                .map((part) => part[0])
+                                .slice(0, 2)
+                                .join("")}
+                            </span>
+                            <span className="font-semibold text-slate-900">{category.category_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-slate-500">{category.description}</td>
+                        <td className="px-4 py-4 font-medium text-slate-700">{category.total_items}</td>
+                        <td className="px-4 py-4">
+                          <StatusBadge status={category.status} />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setViewState({ type: "category", record: category })}
+                              className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                              aria-label="View category"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openEditCategory(category)}
+                              className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                              aria-label="Edit category"
+                            >
+                              <PencilLine className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeCategory(category.id)}
+                              className="grid h-8 w-8 place-items-center rounded-full text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
+                              aria-label="Delete category"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
+              <span>
+                Showing {categoryStart} to {categoryEnd} of {filteredCategories.length.toLocaleString()} categories
+              </span>
+              <Pagination currentPage={categoryPage} totalPages={categoryTotalPages} onChange={setCategoryPage} />
+            </div>
           </div>
+        </section>
+      )}
 
-          <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
-            <span>
-              Showing {categoryStart} to {categoryEnd} of {filteredCategories.length.toLocaleString()} categories
-            </span>
-            <Pagination currentPage={categoryPage} totalPages={categoryTotalPages} onChange={setCategoryPage} />
+      {canViewItems && (
+        <section ref={itemSectionRef} className="rounded-3xl border border-slate-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+          <SectionHeader
+            title="Items"
+            subtitle="Manage all items under categories"
+            searchValue={itemSearch}
+            searchPlaceholder="Search item..."
+            onSearchChange={setItemSearch}
+            actionLabel="Add Item"
+            onAction={openAddItem}
+            secondaryAction={
+              <button
+                type="button"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </button>
+            }
+          />
+
+          <div className="px-5 pb-5 pt-4">
+            <div className="overflow-x-auto rounded-2xl border border-slate-100">
+              <table className="w-full min-w-[900px] border-collapse text-left">
+                <thead>
+                  <tr className="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-3">#</th>
+                    <th className="px-4 py-3">Item Name</th>
+                    <th className="px-4 py-3">Item Code</th>
+                    <th className="px-4 py-3">Category</th>
+                    <th className="px-4 py-3">Unit</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemPageItems.map((item, index) => {
+                    const rowIndex = itemStart + index;
+                    const category = categories.find((entry) => entry.id === item.category_id);
+                    const categoryTone = CATEGORY_BADGES[(item.category_id - 1) % CATEGORY_BADGES.length];
+                    return (
+                      <tr key={item.id} className="border-t border-slate-100 text-sm text-slate-700">
+                        <td className="px-4 py-4 text-slate-500">{rowIndex}</td>
+                        <td className="px-4 py-4 font-semibold text-slate-900">{item.item_name}</td>
+                        <td className="px-4 py-4 text-slate-500">{item.item_code}</td>
+                        <td className="px-4 py-4">
+                          <Badge label={category?.category_name || "N/A"} tone={categoryTone} />
+                        </td>
+                        <td className="px-4 py-4 text-slate-600">{item.unit}</td>
+                        <td className="px-4 py-4">
+                          <StatusBadge status={item.status} />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setViewState({ type: "item", record: item })}
+                              className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                              aria-label="View item"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openEditItem(item)}
+                              className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                              aria-label="Edit item"
+                            >
+                              <PencilLine className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item.id)}
+                              className="grid h-8 w-8 place-items-center rounded-full text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
+                              aria-label="Delete item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
+              <span>
+                Showing {itemStart} to {itemEnd} of {filteredItems.length.toLocaleString()} items
+              </span>
+              <Pagination currentPage={itemPage} totalPages={itemTotalPages} onChange={setItemPage} />
+            </div>
           </div>
-        </div>
-      </section>
-
-      <section ref={itemSectionRef} className="rounded-3xl border border-slate-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
-        <SectionHeader
-          title="Items"
-          subtitle="Manage all items under categories"
-          searchValue={itemSearch}
-          searchPlaceholder="Search item..."
-          onSearchChange={setItemSearch}
-          actionLabel="Add Item"
-          onAction={openAddItem}
-          secondaryAction={
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              <Filter className="h-4 w-4" />
-              Filter
-            </button>
-          }
-        />
-
-        <div className="px-5 pb-5 pt-4">
-          <div className="overflow-x-auto rounded-2xl border border-slate-100">
-            <table className="w-full min-w-[900px] border-collapse text-left">
-              <thead>
-                <tr className="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Item Name</th>
-                  <th className="px-4 py-3">Item Code</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Unit</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {itemPageItems.map((item, index) => {
-                  const rowIndex = itemStart + index;
-                  const category = categories.find((entry) => entry.id === item.category_id);
-                  const categoryTone = CATEGORY_BADGES[(item.category_id - 1) % CATEGORY_BADGES.length];
-                  return (
-                    <tr key={item.id} className="border-t border-slate-100 text-sm text-slate-700">
-                      <td className="px-4 py-4 text-slate-500">{rowIndex}</td>
-                      <td className="px-4 py-4 font-semibold text-slate-900">{item.item_name}</td>
-                      <td className="px-4 py-4 text-slate-500">{item.item_code}</td>
-                      <td className="px-4 py-4">
-                        <Badge label={category?.category_name || "N/A"} tone={categoryTone} />
-                      </td>
-                      <td className="px-4 py-4 text-slate-600">{item.unit}</td>
-                      <td className="px-4 py-4">
-                        <StatusBadge status={item.status} />
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setViewState({ type: "item", record: item })}
-                            className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                            aria-label="View item"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEditItem(item)}
-                            className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                            aria-label="Edit item"
-                          >
-                            <PencilLine className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item.id)}
-                            className="grid h-8 w-8 place-items-center rounded-full text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
-                            aria-label="Delete item"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
-            <span>
-              Showing {itemStart} to {itemEnd} of {filteredItems.length.toLocaleString()} items
-            </span>
-            <Pagination currentPage={itemPage} totalPages={itemTotalPages} onChange={setItemPage} />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {categoryModalOpen && (
         <PopupShell

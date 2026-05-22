@@ -12,7 +12,7 @@ export type DecodedToken = {
 export const decodeToken = (token: string): DecodedToken | null => {
   try {
     return jwtDecode(token);
-  } catch (e) {
+  } catch {
     return null;
   }
 };

@@ -1,4 +1,5 @@
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye } from "lucide-react";
+import type { MouseEventHandler } from "react";
 export const EditIcon = () => {
     return (
         <svg
@@ -51,6 +52,11 @@ export const DeleteIcon = () => {
     );
 };
 
-export const ViewIcon = ({ className = "", onClick }: any) => (
+type ViewIconProps = {
+  className?: string;
+  onClick?: MouseEventHandler<SVGSVGElement>;
+};
+
+export const ViewIcon = ({ className = "", onClick }: ViewIconProps) => (
   <Eye className={`w-5 h-5 ${className}`} onClick={onClick} />
 );

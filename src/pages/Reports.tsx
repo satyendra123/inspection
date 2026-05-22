@@ -317,7 +317,7 @@ export default function Reports() {
           : "application/pdf");
       const blob = new Blob([response.data], { type: contentType });
       const disposition = String(response.headers["content-disposition"] || "");
-      const matchedName = disposition.match(/filename=\"?([^\";]+)\"?/i);
+      const matchedName = disposition.match(/filename="?([^";]+)"?/i);
       const fileName = matchedName?.[1] || `inspection-report.${format}`;
 
       downloadBlobResponse(blob, fileName);
@@ -346,7 +346,7 @@ export default function Reports() {
         type: response.headers["content-type"] || "application/pdf",
       });
       const disposition = String(response.headers["content-disposition"] || "");
-      const matchedName = disposition.match(/filename=\"?([^\";]+)\"?/i);
+      const matchedName = disposition.match(/filename="?([^";]+)"?/i);
       const fileName = matchedName?.[1] || `inspection-detailed-report-${report.inspection_id}.pdf`;
 
       downloadBlobResponse(blob, fileName);
