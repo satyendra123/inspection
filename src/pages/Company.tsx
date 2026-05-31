@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { DeleteIcon, EditIcon } from "../hooks/Icons";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { checkPermission } from "../components/CheckPermission";
+import { api } from "../utils/apiClient";
 
-const API = import.meta.env.VITE_API_BASE;
+const API = import.meta.env.VITE_API_BASE || "http://localhost:8060/api";
 const API_ROOT = (API || "").replace(/\/api\/?$/, "");
 
 const getCompaniesFromResponse = (payload: any) => {
@@ -22,6 +22,7 @@ const getLogoUrl = (logo: string | null | undefined) => {
 };
 
 const Company = () => {
+  const navigate = useNavigate();
   const canViewCompany = checkPermission("view_company");
   const canCreateCompany = checkPermission("create_company");
   const canUpdateCompany = checkPermission("update_company");
@@ -52,26 +53,31 @@ const Company = () => {
     status: "active",
   });
 
-  const token = localStorage.getItem("token") || "";
-  const authConfig = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
   const multipartConfig = {
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "multipart/form-data",
     },
   };
 
+  const handleApiError = (err: any, fallback: string) => {
+    const status = err?.response?.status;
+    const message = err?.response?.data?.message || err?.response?.data?.msg || fallback;
+    if (status === 401) {
+      localStorage.removeItem("token");
+      setError(`${message}. Please sign in again.`);
+      navigate("/login", { replace: true });
+      return;
+    }
+    setError(message);
+  };
+
   const fetchCompanies = async () => {
     try {
-      const res = await axios.get(`${API}/companies`, authConfig);
+      const res = await api.get("/companies");
       setCompanies(getCompaniesFromResponse(res.data));
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to load companies");
+      handleApiError(err, "Failed to load companies");
     }
   };
 
@@ -160,18 +166,18 @@ const Company = () => {
       const formData = toFormData();
 
       if (isEdit) {
-        await axios.put(`${API}/companies/${newCompany.id}`, formData, multipartConfig);
+        await api.put(`/companies/${newCompany.id}`, formData, multipartConfig);
         setMessage("Company updated successfully");
       } else {
-        await axios.post(`${API}/companies`, formData, multipartConfig);
+        await api.post("/companies", formData, multipartConfig);
         setMessage("Company added successfully");
       }
       setSearchTerm("");
       await fetchCompanies();
       closeEditModal();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to save company");
+      handleApiError(err, "Failed to save company");
     }
   };
 
@@ -182,14 +188,14 @@ const Company = () => {
         return;
       }
       const companyId = companies[selectedCompanyIndex!]?.id;
-      await axios.delete(`${API}/companies/${companyId}`, authConfig);
+      await api.delete(`/companies/${companyId}`);
       setMessage("Company deleted successfully");
       await fetchCompanies();
       setIsDeleteModalOpen(false);
       setSelectedCompanyIndex(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to delete company");
+      handleApiError(err, "Failed to delete company");
     }
   };
 
