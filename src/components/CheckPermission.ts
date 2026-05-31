@@ -1,13 +1,14 @@
 
-import { decodeToken } from "../utils/auth";
+import { useAuth } from "../context/AuthContext";
 
 export const checkPermission = (permission: string): boolean => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return false;
+    const {  permissions } = useAuth();
 
-    const decoded = decodeToken(token);
-    return Array.isArray(decoded?.permissions) ? decoded.permissions.includes(permission) : false;
+  try {
+
+    return Array.isArray(permissions)
+      ? permissions.includes(permission)
+      : false;
   } catch {
     return false;
   }

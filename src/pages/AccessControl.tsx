@@ -771,8 +771,6 @@ const AccessControl = () => {
 
   const openEditUser = (user: any, index: number) => {
     setSelectedUserIndex(index);
-    const userCompanies = user?.Companies ?? user?.companies;
-
     setUserForm({
       id: user.id,
       name: user.name || "",
@@ -785,8 +783,8 @@ const AccessControl = () => {
       address: user.address || "",
       roleId: String(getUserRoleId(user) || ""),
       permissions: permissionOptions.filter((option) => getUserPermissionIds(user).includes(Number(option.value))),
-      companies: Array.isArray(userCompanies)
-        ? userCompanies.map((company: any) =>
+      companies: Array.isArray(user?.Companies || user?.companies)
+        ? (user?.Companies || user?.companies).map((company: any) =>
             toOption(company.id, company.company_name || company.name || "Unnamed Company"),
           )
         : [],

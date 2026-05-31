@@ -20,7 +20,7 @@ type NavItem = {
   label: string;
   path: string;
   icon: ReactNode;
-  permission?: string | string[];
+  permission?: string;
 };
 
 type NavSection = {
@@ -46,51 +46,25 @@ const sections: NavSection[] = [
         label: "Company Setup",
         path: "company",
         icon: <BoxCubeIcon />,
-        permission: ["view_company", "create_company", "update_company", "delete_company"],
+        permission: "view_company",
       },
       {
         label: "Projects",
         path: "project",
         icon: <PageIcon />,
-        permission: ["view_project", "create_project", "update_project", "delete_project"],
+        permission: "view_project",
       },
       {
-        label: "Users",
+        label: "User roles & permission",
         path: "user",
         icon: <UserCircleIcon />,
-        permission: [
-          "view_user",
-          "add_user",
-          "create_user",
-          "update_user",
-          "edit_user",
-          "delete_user",
-          "change_password_user",
-        ],
+        permission: "view_user",
       },
       {
-        label: "Roles",
-        path: "role",
-        icon: <GroupIcon />,
-        permission: ["view_role", "create_role", "get_assign_role", "update_assign_role", "delete_assign_role"],
-      },
-      {
-        label: "Permissions",
-        path: "permission",
-        icon: <BoxIconLine />,
-        permission: ["view_permission", "create_permission", "update_permission", "delete_permission"],
-      },
-      {
-        label: "Categories",
+        label: "Categories and items",
         path: "categories",
         icon: <ListIcon />,
         permission: "view_category",
-      },
-      {
-        label: "Items",
-        path: "items",
-        icon: <PageIcon />,
-        permission: "view_items",
       },
       {
         label: "Units",
@@ -164,10 +138,10 @@ const AppSidebar: React.FC = () => {
   const { permissions, user } = useAuth();
   const location = useLocation();
 
-  const hasAccess = (permission?: string | string[]) => {
+  const hasAccess = (permission?: string) => {
     if (!permission) return true;
-    const requiredPermissions = Array.isArray(permission) ? permission : [permission];
-    return requiredPermissions.some((item) => permissions.includes(item));
+    if (permissions.length === 0) return true;
+    return permissions.includes(permission);
   };
 
   const isDashboardActive = (pathname: string) => {

@@ -1,5 +1,4 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import type { LucideIcon } from "lucide-react";
 import {
   BriefcaseBusiness,
@@ -23,32 +22,10 @@ import {
   X,
 } from "lucide-react";
 
-const API = import.meta.env.VITE_API_BASE || "http://localhost:8060/api";
-
 type ProjectStatus = "Active" | "On Hold" | "Completed" | "Overdue";
-
-type ProjectApiCompany = {
-  id?: number;
-  company_name?: string;
-  name?: string;
-};
-
-type ProjectApiRecord = {
-  id: number;
-  company_id?: number | null;
-  project_name?: string | null;
-  status?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  Company?: ProjectApiCompany | null;
-  company?: ProjectApiCompany | null;
-  company_name?: string | null;
-};
 
 type ProjectRecord = {
   id: number;
-  companyId: number;
-  companyName: string;
   projectName: string;
   projectCode: string;
   location: string;
@@ -103,17 +80,6 @@ const EMPTY_FILTERS: ProjectFilters = {
   endDate: "",
 };
 
-const EMPTY_FORM: ProjectFormState = {
-  projectName: "",
-  projectCode: "",
-  location: "",
-  status: "Active",
-  startDate: "",
-  endDate: "",
-  totalValue: "",
-  description: "",
-};
-
 const STATUS_OPTIONS: ProjectStatus[] = ["Active", "On Hold", "Completed", "Overdue"];
 
 const STATUS_STYLES: Record<ProjectStatus, string> = {
@@ -123,155 +89,357 @@ const STATUS_STYLES: Record<ProjectStatus, string> = {
   Overdue: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-100",
 };
 
-function safeDateOnly(value?: string | null) {
-  if (!value) return "";
-  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
-}
+const STAT_CARDS: StatCardConfig[] = [
+  {
+    label: "Total Projects",
+    value: "18",
+    trend: "14.3%",
+    direction: "up",
+    icon: BriefcaseBusiness,
+    iconClass: "text-violet-600",
+    tintClass: "bg-violet-100",
+  },
+  {
+    label: "Active Projects",
+    value: "12",
+    trend: "10.2%",
+    direction: "up",
+    icon: CheckCircle2,
+    iconClass: "text-emerald-600",
+    tintClass: "bg-emerald-100",
+  },
+  {
+    label: "On Hold",
+    value: "3",
+    trend: "2.1%",
+    direction: "down",
+    icon: Clock3,
+    iconClass: "text-amber-600",
+    tintClass: "bg-amber-100",
+  },
+  {
+    label: "Completed",
+    value: "3",
+    trend: "5.1%",
+    direction: "up",
+    icon: CheckCircle2,
+    iconClass: "text-violet-600",
+    tintClass: "bg-violet-100",
+  },
+  {
+    label: "Overdue",
+    value: "2",
+    trend: "8.7%",
+    direction: "down",
+    icon: CircleAlert,
+    iconClass: "text-rose-600",
+    tintClass: "bg-rose-100",
+  },
+  {
+    label: "Total Value",
+    value: "\u20B9 12.75 Cr",
+    trend: "8.3%",
+    direction: "up",
+    icon: Layers3,
+    iconClass: "text-sky-600",
+    tintClass: "bg-sky-100",
+  },
+];
+
+const PROJECTS: ProjectRecord[] = [
+  {
+    id: 1,
+    projectName: "Alpha Project",
+    projectCode: "PRJ-2024-001",
+    location: "Mumbai, Maharashtra",
+    startDate: "2024-01-01",
+    endDate: "2024-12-31",
+    status: "Active",
+    totalAssets: 320,
+    valueInRupees: 32500000,
+    description: "Construction of commercial building and infrastructure development.",
+    createdOn: "2024-01-01",
+    updatedOn: "2024-05-10",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 2,
+    projectName: "Beta Project",
+    projectCode: "PRJ-2024-002",
+    location: "Pune, Maharashtra",
+    startDate: "2024-02-15",
+    endDate: "2025-02-14",
+    status: "Active",
+    totalAssets: 210,
+    valueInRupees: 18500000,
+    description: "Residential township and utility network rollout.",
+    createdOn: "2024-02-15",
+    updatedOn: "2024-05-12",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 3,
+    projectName: "Gamma Project",
+    projectCode: "PRJ-2024-003",
+    location: "Bangalore, Karnataka",
+    startDate: "2024-03-01",
+    endDate: "2025-02-28",
+    status: "On Hold",
+    totalAssets: 150,
+    valueInRupees: 12000000,
+    description: "Technology park expansion paused for vendor review.",
+    createdOn: "2024-03-01",
+    updatedOn: "2024-04-19",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 4,
+    projectName: "Delta Project",
+    projectCode: "PRJ-2024-004",
+    location: "Hyderabad, Telangana",
+    startDate: "2024-04-10",
+    endDate: "2025-04-09",
+    status: "Active",
+    totalAssets: 280,
+    valueInRupees: 26000000,
+    description: "Mixed-use commercial block with retail and office spaces.",
+    createdOn: "2024-04-10",
+    updatedOn: "2024-06-03",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 5,
+    projectName: "Epsilon Project",
+    projectCode: "PRJ-2024-005",
+    location: "Chennai, Tamil Nadu",
+    startDate: "2024-05-20",
+    endDate: "2025-05-19",
+    status: "Completed",
+    totalAssets: 180,
+    valueInRupees: 11000000,
+    description: "Industrial shed and warehouse deliverable completed.",
+    createdOn: "2024-05-20",
+    updatedOn: "2024-09-01",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 6,
+    projectName: "Zeta Project",
+    projectCode: "PRJ-2024-006",
+    location: "Kolkata, West Bengal",
+    startDate: "2024-06-05",
+    endDate: "2025-06-04",
+    status: "Active",
+    totalAssets: 140,
+    valueInRupees: 9500000,
+    description: "Infrastructure upgrade and site automation deployment.",
+    createdOn: "2024-06-05",
+    updatedOn: "2024-08-12",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 7,
+    projectName: "Eta Project",
+    projectCode: "PRJ-2024-007",
+    location: "Ahmedabad, Gujarat",
+    startDate: "2024-07-18",
+    endDate: "2025-07-17",
+    status: "On Hold",
+    totalAssets: 110,
+    valueInRupees: 8000000,
+    description: "Utilities and finishing phase awaiting approvals.",
+    createdOn: "2024-07-18",
+    updatedOn: "2024-10-21",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 8,
+    projectName: "Theta Project",
+    projectCode: "PRJ-2024-008",
+    location: "Noida, Uttar Pradesh",
+    startDate: "2024-08-12",
+    endDate: "2025-08-11",
+    status: "Overdue",
+    totalAssets: 90,
+    valueInRupees: 7500000,
+    description: "Supply chain delays impacted the scheduled handover date.",
+    createdOn: "2024-08-12",
+    updatedOn: "2025-01-05",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 9,
+    projectName: "Iota Project",
+    projectCode: "PRJ-2024-009",
+    location: "Surat, Gujarat",
+    startDate: "2024-09-01",
+    endDate: "2025-08-31",
+    status: "Active",
+    totalAssets: 130,
+    valueInRupees: 9000000,
+    description: "Manufacturing floor expansion and compliance inspection.",
+    createdOn: "2024-09-01",
+    updatedOn: "2024-11-19",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 10,
+    projectName: "Kappa Project",
+    projectCode: "PRJ-2024-010",
+    location: "Jaipur, Rajasthan",
+    startDate: "2024-10-15",
+    endDate: "2025-10-14",
+    status: "Active",
+    totalAssets: 160,
+    valueInRupees: 10500000,
+    description: "Urban redevelopment project with phase-one completion.",
+    createdOn: "2024-10-15",
+    updatedOn: "2024-12-08",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 11,
+    projectName: "Lambda Project",
+    projectCode: "PRJ-2024-011",
+    location: "Kochi, Kerala",
+    startDate: "2024-11-06",
+    endDate: "2025-11-05",
+    status: "Active",
+    totalAssets: 175,
+    valueInRupees: 13250000,
+    description: "Port-side logistics block and inventory automation.",
+    createdOn: "2024-11-06",
+    updatedOn: "2025-01-28",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 12,
+    projectName: "Mu Project",
+    projectCode: "PRJ-2024-012",
+    location: "Bhopal, Madhya Pradesh",
+    startDate: "2024-12-02",
+    endDate: "2025-12-01",
+    status: "Completed",
+    totalAssets: 95,
+    valueInRupees: 6700000,
+    description: "Campus utility retrofit and completion handoff.",
+    createdOn: "2024-12-02",
+    updatedOn: "2025-03-14",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 13,
+    projectName: "Nu Project",
+    projectCode: "PRJ-2024-013",
+    location: "Indore, Madhya Pradesh",
+    startDate: "2025-01-14",
+    endDate: "2026-01-13",
+    status: "Active",
+    totalAssets: 205,
+    valueInRupees: 15800000,
+    description: "Healthcare campus expansion and asset tagging rollout.",
+    createdOn: "2025-01-14",
+    updatedOn: "2025-02-22",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 14,
+    projectName: "Xi Project",
+    projectCode: "PRJ-2024-014",
+    location: "Nagpur, Maharashtra",
+    startDate: "2025-02-11",
+    endDate: "2026-02-10",
+    status: "Active",
+    totalAssets: 240,
+    valueInRupees: 17500000,
+    description: "Warehouse automation and internal logistics redesign.",
+    createdOn: "2025-02-11",
+    updatedOn: "2025-04-10",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 15,
+    projectName: "Omicron Project",
+    projectCode: "PRJ-2024-015",
+    location: "Coimbatore, Tamil Nadu",
+    startDate: "2025-03-18",
+    endDate: "2026-03-17",
+    status: "On Hold",
+    totalAssets: 120,
+    valueInRupees: 8400000,
+    description: "Production facility awaiting utility approvals.",
+    createdOn: "2025-03-18",
+    updatedOn: "2025-04-30",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 16,
+    projectName: "Pi Project",
+    projectCode: "PRJ-2024-016",
+    location: "Trivandrum, Kerala",
+    startDate: "2025-04-09",
+    endDate: "2026-04-08",
+    status: "Overdue",
+    totalAssets: 145,
+    valueInRupees: 10100000,
+    description: "Municipal rollout delayed by electrical rework.",
+    createdOn: "2025-04-09",
+    updatedOn: "2025-05-12",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 17,
+    projectName: "Rho Project",
+    projectCode: "PRJ-2024-017",
+    location: "Lucknow, Uttar Pradesh",
+    startDate: "2025-05-21",
+    endDate: "2026-05-20",
+    status: "Active",
+    totalAssets: 190,
+    valueInRupees: 14300000,
+    description: "Logistics hub with procurement and inventory controls.",
+    createdOn: "2025-05-21",
+    updatedOn: "2025-06-10",
+    thumbnail: PROJECT_IMAGE,
+  },
+  {
+    id: 18,
+    projectName: "Sigma Project",
+    projectCode: "PRJ-2024-018",
+    location: "Vadodara, Gujarat",
+    startDate: "2025-06-28",
+    endDate: "2026-06-27",
+    status: "Completed",
+    totalAssets: 215,
+    valueInRupees: 16900000,
+    description: "Completed commissioning and final acceptance tests.",
+    createdOn: "2025-06-28",
+    updatedOn: "2025-07-11",
+    thumbnail: PROJECT_IMAGE,
+  },
+];
 
 function formatShortDate(value: string) {
-  const safeValue = safeDateOnly(value);
-  if (!safeValue) return "-";
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(`${safeValue}T00:00:00`));
+  }).format(new Date(`${value}T00:00:00`));
 }
 
 function formatDisplayDate(value: string) {
-  const safeValue = safeDateOnly(value);
-  if (!safeValue) return "-";
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(`${safeValue}T00:00:00`));
-}
-
-function toProjectStatus(value?: string | null): ProjectStatus {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (normalized === "inactive") return "On Hold";
-  if (normalized === "completed") return "Completed";
-  if (normalized === "overdue") return "Overdue";
-  return "Active";
+  }).format(new Date(`${value}T00:00:00`));
 }
 
 function formatRupeeCr(valueInRupees: number) {
   return `\u20B9 ${(valueInRupees / 10000000).toFixed(2)} Cr`;
 }
 
-function getProjectsFromResponse(payload: any): ProjectApiRecord[] {
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.projects)) return payload.projects;
-  if (Array.isArray(payload?.rows)) return payload.rows;
-  return [];
-}
-
-function normalizeProject(project: ProjectApiRecord, index: number): ProjectRecord {
-  const companySource = project.Company || project.company || {};
-  const companyId = Number(project.company_id ?? companySource.id ?? 0) || 0;
-  const companyName =
-    companySource.company_name ||
-    companySource.name ||
-    project.company_name ||
-    (companyId ? `Company #${companyId}` : `Company #${project.id}`);
-  const createdOn = safeDateOnly(project.createdAt) || new Date().toISOString().slice(0, 10);
-  const updatedOn = safeDateOnly(project.updatedAt) || createdOn;
-  const metricSeed = Math.max(1, companyId || Number(project.id) || index + 1);
-
-  return {
-    id: Number(project.id),
-    companyId,
-    companyName,
-    projectName: project.project_name || `Project ${project.id}`,
-    projectCode: `PRJ-${String(project.id).padStart(4, "0")}`,
-    location: companyName,
-    startDate: createdOn,
-    endDate: updatedOn,
-    status: toProjectStatus(project.status),
-    totalAssets: metricSeed,
-    valueInRupees: metricSeed * 1000000,
-    description: `Project ${project.project_name || project.id} linked to ${companyName}.`,
-    createdOn,
-    updatedOn,
-    thumbnail: PROJECT_IMAGE,
-  };
-}
-
-function buildStatCards(projects: ProjectRecord[]): StatCardConfig[] {
-  const totalProjects = projects.length;
-  const activeProjects = projects.filter((project) => project.status === "Active").length;
-  const onHoldProjects = projects.filter((project) => project.status === "On Hold").length;
-  const completedProjects = projects.filter((project) => project.status === "Completed").length;
-  const overdueProjects = projects.filter((project) => project.status === "Overdue").length;
-  const totalValue = projects.reduce((sum, project) => sum + project.valueInRupees, 0);
-
-  const percent = (count: number) =>
-    totalProjects > 0 ? `${Math.round((count / totalProjects) * 100)}% of total` : "0% of total";
-
-  return [
-    {
-      label: "Total Projects",
-      value: String(totalProjects),
-      trend: totalProjects > 0 ? "Live API" : "No data",
-      direction: "up",
-      icon: BriefcaseBusiness,
-      iconClass: "text-violet-600",
-      tintClass: "bg-violet-100",
-    },
-    {
-      label: "Active Projects",
-      value: String(activeProjects),
-      trend: percent(activeProjects),
-      direction: activeProjects > 0 ? "up" : "down",
-      icon: CheckCircle2,
-      iconClass: "text-emerald-600",
-      tintClass: "bg-emerald-100",
-    },
-    {
-      label: "On Hold",
-      value: String(onHoldProjects),
-      trend: percent(onHoldProjects),
-      direction: onHoldProjects > 0 ? "down" : "up",
-      icon: Clock3,
-      iconClass: "text-amber-600",
-      tintClass: "bg-amber-100",
-    },
-    {
-      label: "Completed",
-      value: String(completedProjects),
-      trend: percent(completedProjects),
-      direction: completedProjects > 0 ? "up" : "down",
-      icon: CheckCircle2,
-      iconClass: "text-violet-600",
-      tintClass: "bg-violet-100",
-    },
-    {
-      label: "Overdue",
-      value: String(overdueProjects),
-      trend: percent(overdueProjects),
-      direction: overdueProjects > 0 ? "down" : "up",
-      icon: CircleAlert,
-      iconClass: "text-rose-600",
-      tintClass: "bg-rose-100",
-    },
-    {
-      label: "Total Value",
-      value: formatRupeeCr(totalValue),
-      trend: `${totalProjects} project${totalProjects === 1 ? "" : "s"}`,
-      direction: "up",
-      icon: Layers3,
-      iconClass: "text-sky-600",
-      tintClass: "bg-sky-100",
-    },
-  ];
-}
-
-function projectToForm(project?: ProjectRecord | null): ProjectFormState {
-  if (!project) return EMPTY_FORM;
+function projectToForm(project: ProjectRecord): ProjectFormState {
   return {
     projectName: project.projectName,
     projectCode: project.projectCode,
@@ -395,46 +563,14 @@ function ModalFrame({
 }
 
 export default function Project() {
-  const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [projects, setProjects] = useState<ProjectRecord[]>(PROJECTS);
   const [draftFilters, setDraftFilters] = useState<ProjectFilters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<ProjectFilters>(EMPTY_FILTERS);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(0);
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(PROJECTS[0].id);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [formState, setFormState] = useState<ProjectFormState>(EMPTY_FORM);
-
-  const token = localStorage.getItem("token") || "";
-  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
-
-  const fetchProjects = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(`${API}/projects`, axiosConfig);
-      const normalizedProjects = getProjectsFromResponse(response.data).map((project, index) =>
-        normalizeProject(project, index),
-      );
-      setProjects(normalizedProjects);
-      setSelectedProjectId((current) =>
-        current && normalizedProjects.some((project) => project.id === current)
-          ? current
-          : normalizedProjects[0]?.id ?? 0,
-      );
-    } catch (error) {
-      console.error("Failed to fetch projects", error);
-      setProjects([]);
-      setSelectedProjectId(0);
-      setError("Failed to load projects");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [formState, setFormState] = useState<ProjectFormState>(projectToForm(PROJECTS[0]));
 
   const locations = useMemo(
     () => Array.from(new Set(projects.map((project) => project.location))).sort((a, b) =>
@@ -444,11 +580,9 @@ export default function Project() {
   );
 
   const selectedProject = useMemo(
-    () => projects.find((project) => project.id === selectedProjectId) ?? projects[0] ?? null,
+    () => projects.find((project) => project.id === selectedProjectId) ?? projects[0],
     [projects, selectedProjectId],
   );
-
-  const statCards = useMemo(() => buildStatCards(projects), [projects]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -546,35 +680,35 @@ export default function Project() {
     setIsDetailsOpen(false);
   };
 
-  const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
+  const handleUpdateProject = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!selectedProject) {
       return;
     }
 
-    if (!formState.projectName.trim()) {
-      setError("Project name is required");
-      return;
-    }
+    const parsedValue = Number(formState.totalValue.replace(/[^\d]/g, "")) || selectedProject.valueInRupees;
 
-    try {
-      await axios.put(
-        `${API}/projects/${selectedProject.id}`,
-        {
-          company_id: selectedProject.companyId || undefined,
-          project_name: formState.projectName.trim(),
-          status: formState.status === "Active" ? "active" : "inactive",
-        },
-        axiosConfig,
-      );
-      setMessage("Project updated successfully");
-      setIsEditOpen(false);
-      await fetchProjects();
-    } catch (error) {
-      console.error("Failed to update project", error);
-      setError("Failed to update project");
-    }
+    setProjects((prevProjects) =>
+      prevProjects.map((project) =>
+        project.id === selectedProject.id
+          ? {
+              ...project,
+              projectName: formState.projectName,
+              projectCode: formState.projectCode,
+              location: formState.location,
+              status: formState.status,
+              startDate: formState.startDate,
+              endDate: formState.endDate,
+              valueInRupees: parsedValue,
+              description: formState.description,
+              updatedOn: new Date().toISOString().slice(0, 10),
+            }
+          : project,
+      ),
+    );
+
+    setIsEditOpen(false);
   };
 
   const maintenanceCount = selectedProject ? Math.round(selectedProject.totalAssets * 0.0875) : 0;
@@ -583,7 +717,7 @@ export default function Project() {
   return (
     <div className="space-y-6">
       <section className="grid gap-4 xl:grid-cols-6">
-        {statCards.map((card) => (
+        {STAT_CARDS.map((card) => (
           <StatCard key={card.label} {...card} />
         ))}
       </section>
@@ -868,7 +1002,7 @@ export default function Project() {
                 ) : (
                   <tr>
                     <td colSpan={10} className="px-5 py-16 text-center text-sm text-slate-500">
-                      {isLoading ? "Loading projects from API..." : "No projects match the selected filters."}
+                      No projects match the selected filters.
                     </td>
                   </tr>
                 )}
